@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "export DEBUG=grammy* && ts-node ./src/bot.ts",
     "build": "tsc",
-    "start": "node ./dist/bot.js",
+    "start": "export DEBUG=grammy* && node ./dist/bot.js",
     "clean": "rm -rf ./dist"
   },
   "license": "MIT",
