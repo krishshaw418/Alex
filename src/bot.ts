@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-import express from "express";
-import { Bot, webhookCallback } from "grammy";
+import { Bot } from "grammy";
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import type { User, File } from 'grammy/types';
 
@@ -15,13 +14,6 @@ const model = genAi.getGenerativeModel({
 })
 
 const chat = model.startChat();
-
-// Express setup
-const app = express();
-app.use(express.json());
-
-// Attach bot webhook handler to Express
-app.use("/webhook", webhookCallback(bot, "express"));
 
 // Handlers
 bot.command('start', async (ctx) => {
@@ -100,10 +92,4 @@ bot.catch((error) => {
   return ctx.reply('Something went wrong. Try again!');
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, async () => {
-  const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/webhook`;
-  await bot.api.setWebhook(webhookUrl);
-  console.log(`Webhook set to ${webhookUrl}`);
-})
+bot.start();
