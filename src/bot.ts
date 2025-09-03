@@ -15,7 +15,7 @@ const genAi = new GoogleGenAI({
 const chats = await genAi.chats.create({
   model: "gemini-2.5-flash-lite",
   config: {
-    systemInstruction: "You are Alex, a Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
+    systemInstruction: "You are Alex, a female(no need to mention gender unless asked explicitly) Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
   },
 })
 
