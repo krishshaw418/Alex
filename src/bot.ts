@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { Bot } from "grammy";
+import { Bot, InputFile } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
+import crypto from "crypto";
 
 // Bot setup
 const bot = new Bot(process.env.BOT_API_KEY!);
@@ -11,12 +12,16 @@ const genAi = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GEMINI_API_KEY!,
 });
 
-const chats = await genAi.chats.create({
+const chats = genAi.chats.create({
   model: "gemini-2.5-flash-lite",
   config: {
     systemInstruction: "You are Alex, a Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
   },
 })
+
+function signPayload(payload: string, secret: string, timestamp: string) {
+  return crypto.createHmac("sha256", secret).update(`${timestamp}.${payload}`).digest("hex");
+}
 
 // Handlers
 bot.command('start', async (ctx) => {
@@ -31,6 +36,57 @@ bot.command('start', async (ctx) => {
   }
   return ctx.reply(response.text, { parse_mode: 'Markdown' });
 });
+
+bot.command('generate', async (ctx) => {
+  const chats = genAi.chats.create({
+    model: "gemini-2.5-flash-lite",
+    config: {
+      systemInstruction: "You are Alex, a Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
+    },
+  });
+  
+  const message = ctx.message?.text?.split(" ").slice(1).join(" ");
+  if(!message) {
+    return ctx.reply("Command Usage: /generate <prompt>, <style>");
+  }
+
+  const [prompt, style] = message.split(",").map((s) => s.trim());
+  if(!prompt || !style) {
+    return ctx.reply("For generating image please write the command in the following format. Example:\n/generate A cat wearing glasses, cartoon");
+  }
+
+  await ctx.reply("⚡ Generating your image... please wait!");
+
+  try {
+    const payload = JSON.stringify({ prompt, style });
+    const timestamp = Date.now().toString();
+    const signature = signPayload(payload, process.env.SIGNATURE_VERIFICATION_SECRET_KEY!, timestamp);
+    const response = await fetch(`${process.env.IMAGEN_WEBHOOK_URL}`, {
+      method: "POST",
+      headers: {
+        "x-signature": signature,
+        "x-timestamp": timestamp,
+        "Content-Type" : "application/json",
+      },
+      body: payload
+    })
+
+    const contentType = response.headers.get("content-type") || "";
+    
+    // if (contentType.startsWith("image/")) {
+    //   const buffer = Buffer.from(await response.arrayBuffer());
+    //   return ctx.replyWithPhoto(new InputFile(buffer));
+    // }
+
+    // const errorText = await response.text();
+    // return ctx.reply(`❌ Request Failed: ${errorText}`);
+    const data = await response.json();
+    return ctx.reply(data.message);
+  } catch (error) {
+    console.error("Webhook error:", error);
+    return ctx.reply("⚠️ Something went wrong while contacting the image API.");
+  }
+})
 
 bot.on('message:text', async (ctx) => {
   const prompt: string = ctx.message.text;
