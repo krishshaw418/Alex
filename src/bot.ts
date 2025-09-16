@@ -1,15 +1,26 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { Bot, InputFile } from "grammy";
+import { Bot } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
 import crypto from "crypto";
 
 // Bot setup
-const bot = new Bot(process.env.BOT_API_KEY!);
+if(!process.env.BOT_API_KEY) {
+  console.error("Error: BOT_API_KEY is undefined or not provided!");
+  process.exit(1);
+}
+
+const bot = new Bot(process.env.BOT_API_KEY);
+
+if(!process.env.GOOGLE_GEMINI_API_KEY) {
+  console.error("Error: GOOGLE_GEMINI_API_KEY is undefined or not provided!");
+  process.exit(1);
+}
+
 const genAi = new GoogleGenAI({
   vertexai: false,
-  apiKey: process.env.GOOGLE_GEMINI_API_KEY!,
+  apiKey: process.env.GOOGLE_GEMINI_API_KEY,
 });
 
 const chats = genAi.chats.create({
@@ -17,7 +28,7 @@ const chats = genAi.chats.create({
   config: {
     systemInstruction: "You are Alex, a Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
   },
-})
+});
 
 function signPayload(payload: string, secret: string, timestamp: string) {
   return crypto.createHmac("sha256", secret).update(`${timestamp}.${payload}`).digest("hex");
