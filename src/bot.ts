@@ -49,7 +49,15 @@ bot.on('message:text', async (ctx) => {
   if(!response.text) {
     return ctx.reply("Server busy. Please try again after sometime.");
   }
-  return ctx.reply(response.text, {parse_mode: "Markdown"});
+  try {
+    return ctx.reply(response.text, {parse_mode: "Markdown"});
+  } catch (error) {
+    if(error instanceof GrammyError) {
+      console.log(error.message);
+      return;
+    }
+  }
+  // return ctx.reply(response.text, {parse_mode: "Markdown"});
 })
 
 bot.on('message:voice', async (ctx) => {
