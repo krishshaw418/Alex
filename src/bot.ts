@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-import { Bot, webhookCallback } from "grammy";
+import { Bot, webhookCallback, GrammyError, HttpError } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
 
@@ -148,10 +148,22 @@ bot.on('message:video', async (ctx) => {
   return ctx.reply(result.text, { parse_mode: 'Markdown' });
 })
 
-bot.catch((error) => {
+bot.catch((error: GrammyError | HttpError |  any) => {
   const ctx = error.ctx;
   console.log(error);
-  return ctx.reply('Something went wrong. Try again!');
+  console.error(`Error while handling update ${ctx.update.update_id}:`);
+
+  if (error.error instanceof GrammyError) {
+    if (error.error.description.includes("bot was blocked by the user")) {
+      console.log("User blocked the bot, skipping this update.");
+      return;
+    }
+    console.error("Grammy error:", error.error.description);
+  } else if (error.error instanceof HttpError) {
+    console.error("Telegram server/network error:", error.error);
+  } else {
+    console.error("Unknown error:", error.error);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
