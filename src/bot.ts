@@ -12,10 +12,10 @@ const genAi = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GEMINI_API_KEY!,
 });
 
-const chats = await genAi.chats.create({
+const chats = genAi.chats.create({
   model: "gemini-2.5-flash-lite",
   config: {
-    systemInstruction: "You are Alex, a FEMALE Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
+    systemInstruction: "You are Alex, a FEMALE Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images, no GIFs or videos or documents of any other type."
   },
 })
 
@@ -87,7 +87,14 @@ bot.on('message:voice', async (ctx) => {
   if(!result.text) {
     return ctx.reply("Server busy. Please try again after sometime.");
   }
-  return ctx.reply(result.text, { parse_mode: 'Markdown' });
+  try {
+    return ctx.reply(result.text, { parse_mode: 'Markdown' });
+  } catch (error) {
+    if(error instanceof GrammyError) {
+      console.log(error.message);
+      return;
+    }
+  }
 })
 
 type MINE = 'image/jpeg' | 'image/png' | 'video/mp4' | 'video/webm';
@@ -125,7 +132,14 @@ bot.on('message:photo', async (ctx) => {
   if(!result.text){
     return ctx.reply("Server busy. Please try again after sometime.");
   }
-  return ctx.reply(result.text, { parse_mode: 'Markdown' });
+  try {
+    return ctx.reply(result.text, { parse_mode: 'Markdown' });
+  } catch (error) {
+    if(error instanceof GrammyError) {
+      console.log(error.message);
+      return;
+    }
+  }
 });
 
 bot.on('message:video', async (ctx) => {
