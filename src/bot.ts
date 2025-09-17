@@ -115,6 +115,9 @@ bot.on('message:photo', async (ctx) => {
 
   const photoURL: string = `${process.env.BOT_API_SERVER}/file/bot${process.env.BOT_API_KEY}/${photoFilePath}`;
   const fetchedResponse = await fetch(photoURL);
+  if(!fetchedResponse.ok){
+    return;
+  }
 
   const data: ArrayBuffer = await fetchedResponse.arrayBuffer();
   const base64Photo: string = Buffer.from(data).toString('base64');
@@ -136,7 +139,7 @@ bot.on('message:photo', async (ctx) => {
     return ctx.reply(result.text, { parse_mode: 'Markdown' });
   } catch (error) {
     if(error instanceof GrammyError) {
-      console.log(error.message);
+      console.log("Error from image handler: ", error.message);
       return;
     }
   }
