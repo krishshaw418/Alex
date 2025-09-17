@@ -53,11 +53,10 @@ bot.on('message:text', async (ctx) => {
     ctx.reply(response.text, {parse_mode: "Markdown"});
   } catch (error) {
     if(error instanceof GrammyError) {
-      console.log(error.message);
+      console.log("Error from text handler: ", error.message);
       return;
     }
   }
-  // return ctx.reply(response.text, {parse_mode: "Markdown"});
 })
 
 bot.on('message:voice', async (ctx) => {
@@ -91,7 +90,7 @@ bot.on('message:voice', async (ctx) => {
     ctx.reply(result.text, { parse_mode: 'Markdown' });
   } catch (error) {
     if(error instanceof GrammyError) {
-      console.log(error.message);
+      console.log("Error from audio handler", error.message);
       return;
     }
   }
@@ -172,24 +171,6 @@ bot.on('message:video', async (ctx) => {
   }
   return ctx.reply(result.text, { parse_mode: 'Markdown' });
 })
-
-// bot.catch((error: GrammyError | HttpError |  any) => {
-//   const ctx = error.ctx;
-//   console.log(error);
-//   console.error(`Error while handling update ${ctx.update.update_id}:`);
-
-//   if (error.error instanceof GrammyError) {
-//     if (error.error.description.includes("bot was blocked by the user")) {
-//       console.log("User blocked the bot, skipping this update.");
-//       return;
-//     }
-//     console.error("Grammy error:", error.error.description);
-//   } else if (error.error instanceof HttpError) {
-//     console.error("Telegram server/network error:", error.error);
-//   } else {
-//     console.error("Unknown error:", error.error);
-//   }
-// });
 
 const PORT = process.env.PORT || 3000;
 
