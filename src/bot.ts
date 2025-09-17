@@ -50,7 +50,7 @@ bot.on('message:text', async (ctx) => {
     return ctx.reply("Server busy. Please try again after sometime.");
   }
   try {
-    return ctx.reply(response.text, {parse_mode: "Markdown"});
+    ctx.reply(response.text, {parse_mode: "Markdown"});
   } catch (error) {
     if(error instanceof GrammyError) {
       console.log(error.message);
@@ -88,7 +88,7 @@ bot.on('message:voice', async (ctx) => {
     return ctx.reply("Server busy. Please try again after sometime.");
   }
   try {
-    return ctx.reply(result.text, { parse_mode: 'Markdown' });
+    ctx.reply(result.text, { parse_mode: 'Markdown' });
   } catch (error) {
     if(error instanceof GrammyError) {
       console.log(error.message);
@@ -136,7 +136,7 @@ bot.on('message:photo', async (ctx) => {
     return ctx.reply("Server busy. Please try again after sometime.");
   }
   try {
-    return ctx.reply(result.text, { parse_mode: 'Markdown' });
+    ctx.reply(result.text, { parse_mode: 'Markdown' });
   } catch (error) {
     if(error instanceof GrammyError) {
       console.log("Error from image handler: ", error.message);
