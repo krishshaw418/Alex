@@ -88,38 +88,103 @@ bot.command('help', async (ctx) => {
 })
 
 // defining the conversation
+// async function imaGen(conversation: Conversation, ctx: Context) {
+//   await ctx.reply("Please describe your image.");
+//   const promptCtx: Context = await conversation.waitFor("message:text");
+//   const prompt = promptCtx.message?.text;
+
+//   const styleMenu = conversation.menu("styles")
+//     .text({ text: "anime", payload: "anime" }, (ctx) => ctx.answerCallbackQuery())
+//     .text({ text: "flux-dev", payload: "flux-dev" }, (ctx) => ctx.answerCallbackQuery())
+//     .row()
+//     .text({ text: "flux-schnell", payload: "flux-schnell" }, (ctx) => {
+//       ctx.answerCallbackQuery();
+//     })
+//     .text({ text: "flux-dev-fast", payload: "flux-dev-fast" }, (ctx) => {
+//       ctx.answerCallbackQuery();
+//     })
+//     .row()
+//     .text({ text: "realistic", payload: "realistic" }, (ctx) => {
+//       ctx.answerCallbackQuery(), {payload: "realistic"};
+//     });
+
+//   await ctx.reply("Please select a style for your image: ", {
+//     reply_markup: styleMenu,
+//   });
+
+//   const menuCtx = await conversation.waitFor("callback_query:data");
+//   // const style = menuCtx.update.callback_query.data;
+//   const style = (menuCtx as any).match ?? menuCtx.update.callback_query?.data ?? null;
+  
+//   const payload = { prompt, style };
+//   console.log(payload);
+//   await ctx.reply("Processing your request. Hold tight!");
+// }
+
 async function imaGen(conversation: Conversation, ctx: Context) {
   await ctx.reply("Please describe your image.");
-  const promptCtx: Context = await conversation.waitFor("message:text");
-  const prompt = promptCtx.message?.text;
+  const promptCtx = await conversation.waitFor("message:text");
+  const prompt = promptCtx.message?.text ?? "";
+
+  let style: string | null = null;
 
   const styleMenu = conversation.menu("styles")
-    .text({ text: "anime", payload: "anime" }, (ctx) => ctx.answerCallbackQuery())
-    .text({ text: "flux-dev", payload: "flux-dev" }, (ctx) => ctx.answerCallbackQuery())
-    .row()
-    .text({ text: "flux-schnell", payload: "flux-schnell" }, (ctx) => {
-      ctx.answerCallbackQuery();
+    .text("anime", async (c) => {
+      style = "anime";
+      await c.answerCallbackQuery();
+      await c.reply("You picked anime!");
+      await c.menu.close();
     })
-    .text({ text: "flux-dev-fast", payload: "flux-dev-fast" }, (ctx) => {
-      ctx.answerCallbackQuery();
+    .text("flux-dev", async (c) => {
+      style = "flux-dev";
+      await c.answerCallbackQuery();
+      await c.reply("You picked flux-dev!");
+      await c.menu.close();
     })
     .row()
-    .text({ text: "realistic", payload: "realistic" }, (ctx) => {
-      ctx.answerCallbackQuery(), {payload: "realistic"};
+    .text("flux-schnell", async (c) => {
+      style = "flux-schnell";
+      await c.answerCallbackQuery();
+      await c.reply("You picked flux-schnell!");
+      await c.menu.close();
+    })
+    .text("flux-dev-fast", async (c) => {
+      style = "flux-dev-fast";
+      await c.answerCallbackQuery();
+      await c.reply("You picked flux-dev-fast!");
+      await c.menu.close();
+    })
+    .row()
+    .text("realistic", async (c) => {
+      style = "realistic";
+      await c.answerCallbackQuery();
+      await c.reply("You picked realistic!");
+      await c.menu.close();
     });
 
-  await ctx.reply("Please select a style for your image: ", {
+  await ctx.reply("Please select a style for your image:", {
     reply_markup: styleMenu,
   });
 
-  const menuCtx = await conversation.waitFor("callback_query:data");
-  // const style = menuCtx.update.callback_query.data;
-  const style = (menuCtx as any).match ?? menuCtx.update.callback_query?.data ?? null;
-  
+  // Wait until style has been set inside one of the handlers
+  await conversation.external(() =>
+    new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (style) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 100);
+    })
+  );
+
+  // At this point `style` is chosen
   const payload = { prompt, style };
   console.log(payload);
+
   await ctx.reply("Processing your request. Hold tight!");
 }
+
 
 // Registering the conversation
 bot.use(createConversation(imaGen));
