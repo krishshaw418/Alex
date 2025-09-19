@@ -96,21 +96,31 @@ async function imaGen(conversation: Conversation, ctx: Context) {
 
   const styleMenu = conversation.menu("styles")
     .text("anime", async (ctx) => {
+      style = "anime";
       await ctx.reply("You have selected anime!");
+      ctx.menu.close();
     })
     .text("flux-dev", async (ctx) => {
+      style = "flux-dev";
       await ctx.reply("You have selected flux-dev!");
+      ctx.menu.close();
     })
     .row()
     .text("flux-schnell", async (ctx) => {
+      style = "flux-schnell";
       await ctx.reply("You have selected flux-schnell!");
+      ctx.menu.close();
     })
     .text("flux-dev-fast", async (ctx) => {
+      style = "flux-dev-fast";
       await ctx.reply("You have selected flux-dev-fast!");
+      ctx.menu.close();
     })
     .row()
     .text("realistic", async (ctx) => {
+      style = "realistic";
       await ctx.reply("You have selected flux-dev-fast!");
+      ctx.menu.close();
     });
 
   await ctx.reply("Please select a style for your image: ", {
