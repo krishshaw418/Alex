@@ -119,6 +119,7 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   const payload = { prompt, style };
   console.log(payload);
   await ctx.reply("Processing your request. Hold tight!");
+  return;
 }
 
 // Registering the conversation
