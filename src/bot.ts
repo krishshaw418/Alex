@@ -70,7 +70,14 @@ async function imaGen(conversation: Conversation, ctx: Context) {
 }
 
 bot.command('generate', async (ctx) => {
-  await ctx.conversation.enter("imaGen");
+  try {
+    await ctx.conversation.enter("imaGen");
+  } catch (error) {
+    if(error instanceof GrammyError) {
+      console.log("Error: ", error.message);
+      return;
+    }
+  }
 })
 
 bot.on('message:text', async (ctx) => {
