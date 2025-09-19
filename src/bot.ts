@@ -94,21 +94,17 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   const prompt = promptCtx.message?.text;
 
   const styleMenu = conversation.menu("styles")
-    .text("anime", (ctx) => {
-      ctx.answerCallbackQuery(), {payload: "anime"};
+    .text({ text: "anime", payload: "anime" }, (ctx) => ctx.answerCallbackQuery())
+    .text({ text: "flux-dev", payload: "flux-dev" }, (ctx) => ctx.answerCallbackQuery())
+    .row()
+    .text({ text: "flux-schnell", payload: "flux-schnell" }, (ctx) => {
+      ctx.answerCallbackQuery();
     })
-    .text("flux-dev", (ctx) => {
-      ctx.answerCallbackQuery(), {payload: "flux-dev"};
+    .text({ text: "flux-dev-fast", payload: "flux-dev-fast" }, (ctx) => {
+      ctx.answerCallbackQuery();
     })
     .row()
-    .text("flux-schnell", (ctx) => {
-      ctx.answerCallbackQuery(), {payload: "flux-schnell"};
-    })
-    .text("flux-dev-fast", (ctx) => {
-      ctx.answerCallbackQuery(), {payload: "flux-dev-fast"};
-    })
-    .row()
-    .text("realistic", (ctx) => {
+    .text({ text: "realistic", payload: "realistic" }, (ctx) => {
       ctx.answerCallbackQuery(), {payload: "realistic"};
     });
 
