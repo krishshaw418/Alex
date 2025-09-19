@@ -113,7 +113,8 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   });
 
   const menuCtx = await conversation.waitFor("callback_query:data");
-  const style = menuCtx.update.callback_query.data;
+  // const style = menuCtx.update.callback_query.data;
+  const style = (menuCtx as any).match ?? menuCtx.update.callback_query?.data ?? null;
   
   const payload = { prompt, style };
   console.log(payload);
