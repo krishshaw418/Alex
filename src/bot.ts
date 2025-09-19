@@ -1,12 +1,20 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-import { Bot, webhookCallback, GrammyError, HttpError } from "grammy";
+import { Bot, webhookCallback, GrammyError, type Context } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
+import {
+  type Conversation,
+  type ConversationFlavor,
+  conversations,
+  createConversation,
+} from "@grammyjs/conversations";
 
 // Bot setup
-const bot = new Bot(process.env.BOT_API_KEY!);
+const bot = new Bot<ConversationFlavor<Context>>(process.env.BOT_API_KEY!);
+bot.use(conversations());
+
 const genAi = new GoogleGenAI({
   vertexai: false,
   apiKey: process.env.GOOGLE_GEMINI_API_KEY!,
@@ -15,7 +23,7 @@ const genAi = new GoogleGenAI({
 const chats = genAi.chats.create({
   model: "gemini-2.5-flash-lite",
   config: {
-    systemInstruction: "You are Alex, a FEMALE Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short no matter what, if the answer is too long then just reply with an apology that you can't reply. You have the ability to respond to audios, images, no GIFs or videos or documents of any other type."
+    systemInstruction: "You are Alex, a FEMALE Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short, unless asked otherwise. You have the ability to respond to audios and images as well."
   },
 })
 
@@ -40,6 +48,30 @@ bot.command('start', async (ctx) => {
   }
   return ctx.reply(response.text, { parse_mode: 'Markdown' });
 });
+
+bot.command('help', async (ctx) => {
+  const message = `🤖 AI Helper Bot - Commands
+
+    /start - Start a session and ask me general queries.
+    (Note: I can't answer real-time stuff like date, time, weather etc.)
+
+    /generate - Turn your text prompt into an image.
+    (You'll choose a style after giving a prompt.)
+
+    Type /help anytime to see this menu again. 🚀`;
+
+  await ctx.reply(message);
+})
+
+async function imaGen(conversation: Conversation, ctx: Context) {
+  await ctx.reply("Please describe your image.");
+  const { message } = await conversation.waitFor("message:text");
+  await ctx.reply("Processing your request. Hold tight!");
+}
+
+bot.command('generate', async (ctx) => {
+  await ctx.conversation.enter("imaGen");
+})
 
 bot.on('message:text', async (ctx) => {
   const prompt: string = ctx.message.text;
