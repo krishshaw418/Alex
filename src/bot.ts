@@ -10,10 +10,34 @@ import {
   conversations,
   createConversation,
 } from "@grammyjs/conversations";
+import { Menu } from "@grammyjs/menu";
 
 // Bot setup
 const bot = new Bot<ConversationFlavor<Context>>(process.env.BOT_API_KEY!);
 bot.use(conversations());
+
+const styleMenu = new Menu("style-menu")
+  .text("anime", async (ctx) => {
+    await ctx.reply("You have selected anime!");
+  })
+  .row()
+  .text("flux-dev", async (ctx) => {
+    await ctx.reply("You have selected flux-dev!");
+  })
+  .row()
+  .text("flux-schnell", async (ctx) => {
+    await ctx.reply("You have selected flux-schnell!");
+  })
+  .row()
+  .text("flux-dev-fast", async (ctx) => {
+    await ctx.reply("You have selected flux-dev-fast!");
+  })
+  .row()
+  .text("realistic", async (ctx) => {
+    await ctx.reply("You have selected flux-dev-fast!");
+  });
+
+bot.use(styleMenu);
 
 const genAi = new GoogleGenAI({
   vertexai: false,
@@ -51,7 +75,7 @@ bot.command('start', async (ctx) => {
 
 bot.command('help', async (ctx) => {
   const message = `🤖 AI Helper Bot - Commands
-  
+
   /start - Start a session and ask me general queries.
   (Note: I can't answer real-time stuff like date, time, weather etc.)
 
@@ -63,16 +87,47 @@ bot.command('help', async (ctx) => {
   await ctx.reply(message);
 })
 
+// defining the conversation
 async function imaGen(conversation: Conversation, ctx: Context) {
   await ctx.reply("Please describe your image.");
-  const { message } = await conversation.waitFor("message:text");
+  const promptCtx: Context = await conversation.waitFor("message:text");
+  const prompt = promptCtx.message?.text;
+  let style: string = "";
+
+  const styleMenu = conversation.menu("styles")
+    .text("anime", async (ctx) => {
+      await ctx.reply("You have selected anime!");
+    })
+    .text("flux-dev", async (ctx) => {
+      await ctx.reply("You have selected flux-dev!");
+    })
+    .row()
+    .text("flux-schnell", async (ctx) => {
+      await ctx.reply("You have selected flux-schnell!");
+    })
+    .text("flux-dev-fast", async (ctx) => {
+      await ctx.reply("You have selected flux-dev-fast!");
+    })
+    .row()
+    .text("realistic", async (ctx) => {
+      await ctx.reply("You have selected flux-dev-fast!");
+    });
+
+  await ctx.reply("Please select a style for your image: ", {
+    reply_markup: styleMenu,
+  });
+  
+  const payload = { prompt, style };
+  console.log(payload);
   await ctx.reply("Processing your request. Hold tight!");
 }
 
+// Registering the conversation
 bot.use(createConversation(imaGen));
 
 bot.command('generate', async (ctx) => {
   try {
+    // initializing conversation
     await ctx.conversation.enter("imaGen");
   } catch (error) {
     if(error instanceof GrammyError) {
