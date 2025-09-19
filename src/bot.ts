@@ -92,40 +92,32 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   await ctx.reply("Please describe your image.");
   const promptCtx: Context = await conversation.waitFor("message:text");
   const prompt = promptCtx.message?.text;
-  let style: string = "";
 
   const styleMenu = conversation.menu("styles")
-    .text("anime", async (ctx) => {
-      style = "anime";
-      await ctx.reply("You have selected anime!");
-      ctx.menu.close();
+    .text("anime", (ctx) => {
+      ctx.answerCallbackQuery(), {payload: "anime"};
     })
-    .text("flux-dev", async (ctx) => {
-      style = "flux-dev";
-      await ctx.reply("You have selected flux-dev!");
-      ctx.menu.close();
+    .text("flux-dev", (ctx) => {
+      ctx.answerCallbackQuery(), {payload: "flux-dev"};
     })
     .row()
-    .text("flux-schnell", async (ctx) => {
-      style = "flux-schnell";
-      await ctx.reply("You have selected flux-schnell!");
-      ctx.menu.close();
+    .text("flux-schnell", (ctx) => {
+      ctx.answerCallbackQuery(), {payload: "flux-schnell"};
     })
-    .text("flux-dev-fast", async (ctx) => {
-      style = "flux-dev-fast";
-      await ctx.reply("You have selected flux-dev-fast!");
-      ctx.menu.close();
+    .text("flux-dev-fast", (ctx) => {
+      ctx.answerCallbackQuery(), {payload: "flux-dev-fast"};
     })
     .row()
-    .text("realistic", async (ctx) => {
-      style = "realistic";
-      await ctx.reply("You have selected flux-dev-fast!");
-      ctx.menu.close();
+    .text("realistic", (ctx) => {
+      ctx.answerCallbackQuery(), {payload: "realistic"};
     });
 
   await ctx.reply("Please select a style for your image: ", {
     reply_markup: styleMenu,
   });
+
+  const menuCtx = await conversation.waitFor("callback_query:data");
+  const style = menuCtx.update.callback_query.data;
   
   const payload = { prompt, style };
   console.log(payload);
