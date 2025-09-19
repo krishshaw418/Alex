@@ -51,14 +51,14 @@ bot.command('start', async (ctx) => {
 
 bot.command('help', async (ctx) => {
   const message = `🤖 AI Helper Bot - Commands
+  
+  /start - Start a session and ask me general queries.
+  (Note: I can't answer real-time stuff like date, time, weather etc.)
 
-    /start - Start a session and ask me general queries.
-    (Note: I can't answer real-time stuff like date, time, weather etc.)
+  /generate - Turn your text prompt into an image.
+  (You'll choose a style after giving a prompt.)
 
-    /generate - Turn your text prompt into an image.
-    (You'll choose a style after giving a prompt.)
-
-    Type /help anytime to see this menu again. 🚀`;
+  Type /help anytime to see this menu again. 🚀`;
 
   await ctx.reply(message);
 })
@@ -68,6 +68,8 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   const { message } = await conversation.waitFor("message:text");
   await ctx.reply("Processing your request. Hold tight!");
 }
+
+bot.use(createConversation(imaGen));
 
 bot.command('generate', async (ctx) => {
   try {
