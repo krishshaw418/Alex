@@ -92,34 +92,47 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   await ctx.reply("Please describe your image.");
   const promptCtx: Context = await conversation.waitFor("message:text");
   const prompt = promptCtx.message?.text;
+  let style: string = ""; 
 
-  const styleMenu = conversation.menu("styles")
-    .text({ text: "anime", payload: "anime" }, (ctx) => ctx.answerCallbackQuery())
-    .text({ text: "flux-dev", payload: "flux-dev" }, (ctx) => ctx.answerCallbackQuery())
-    .row()
-    .text({ text: "flux-schnell", payload: "flux-schnell" }, (ctx) => {
-      ctx.answerCallbackQuery();
+  const styleMenu = conversation.menu()
+    .text("anime", async (ctx) => {
+      style = "anime";
+      await ctx.reply("Selected anime!");
+      ctx.menu.close();
     })
-    .text({ text: "flux-dev-fast", payload: "flux-dev-fast" }, (ctx) => {
-      ctx.answerCallbackQuery();
+    .text("flux-dev", async (ctx) => {
+      style = "flux-dev";
+      await ctx.reply("Selected flux-dev!");
+      ctx.menu.close();
     })
     .row()
-    .text({ text: "realistic", payload: "realistic" }, (ctx) => {
-      ctx.answerCallbackQuery(), {payload: "realistic"};
+    .text("flux-schnell", async (ctx) => {
+      style = "flux-schnell";
+      await ctx.reply("Selected flux-schnell!");
+      ctx.menu.close();
+    })
+    .text("flux-dev-fast", async (ctx) => {
+      style = "flux-dev-fast";
+      await ctx.reply("Selected flux-dev-fast!");
+      ctx.menu.close();
+    })
+    .row()
+    .text("realistic", async (ctx) => {
+      style = "realistic";
+      await ctx.reply("Selected realistic!");
+      ctx.menu.close();
     });
 
   await ctx.reply("Please select a style for your image: ", {
     reply_markup: styleMenu,
   });
 
-  const menuCtx = await conversation.waitFor("callback_query:data");
-  // const style = menuCtx.update.callback_query.data;
-  const style = (menuCtx as any).match ?? menuCtx.update.callback_query?.data ?? null;
-  
+  await conversation.wait();
   const payload = { prompt, style };
   console.log(payload);
+
   await ctx.reply("Processing your request. Hold tight!");
-  return;
+  await conversation.halt();
 }
 
 // Registering the conversation
