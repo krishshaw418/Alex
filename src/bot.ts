@@ -10,34 +10,10 @@ import {
   conversations,
   createConversation,
 } from "@grammyjs/conversations";
-// import { Menu } from "@grammyjs/menu";
 
 // Bot setup
 const bot = new Bot<ConversationFlavor<Context>>(process.env.BOT_API_KEY!);
 bot.use(conversations());
-
-// const styleMenu = new Menu("style-menu")
-//   .text("anime", async (ctx) => {
-//     await ctx.reply("You have selected anime!");
-//   })
-//   .row()
-//   .text("flux-dev", async (ctx) => {
-//     await ctx.reply("You have selected flux-dev!");
-//   })
-//   .row()
-//   .text("flux-schnell", async (ctx) => {
-//     await ctx.reply("You have selected flux-schnell!");
-//   })
-//   .row()
-//   .text("flux-dev-fast", async (ctx) => {
-//     await ctx.reply("You have selected flux-dev-fast!");
-//   })
-//   .row()
-//   .text("realistic", async (ctx) => {
-//     await ctx.reply("You have selected flux-dev-fast!");
-//   });
-
-// bot.use(styleMenu);
 
 const genAi = new GoogleGenAI({
   vertexai: false,
@@ -127,7 +103,7 @@ async function imaGen(conversation: Conversation, ctx: Context) {
     reply_markup: styleMenu,
   });
 
-  // await conversation.wait();
+  await conversation.wait();
   const payload = { prompt, style };
   console.log(payload);
 

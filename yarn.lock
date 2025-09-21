@@ -22,11 +22,6 @@
   resolved "https://registry.yarnpkg.com/@grammyjs/conversations/-/conversations-2.1.0.tgz#e9482565a0f6e77f18391d1eea6350a42bbbf145"
   integrity sha512-nYoHwFyXcQ2lkQejKReoINknkgFjeIZhyJNMBwHng5UHO/ewHKs1dV2XVaLrKkHTZ1gCZ+dKkjEp26wwHyQeGg==
 
-"@grammyjs/menu@^1.3.1":
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/@grammyjs/menu/-/menu-1.3.1.tgz#f807ae07305c30356f636e3f4ffa4bae3b98662b"
-  integrity sha512-HJslY/n76T1Ar5qDDhNtjLs+PpcrlB9aGsXu3CJHLt147DC3K3lpiRvRW/Xh9/x9hqYVw7KKbnvsQXVgzoU81Q==
-
 "@grammyjs/types@3.22.1":
   version "3.22.1"
   resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.22.1.tgz#7c6f2b541f10af06a19cea6d35d0bbf18ea44d20"
