@@ -17,6 +17,11 @@
     google-auth-library "^9.14.2"
     ws "^8.18.0"
 
+"@grammyjs/conversations@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@grammyjs/conversations/-/conversations-2.1.0.tgz#e9482565a0f6e77f18391d1eea6350a42bbbf145"
+  integrity sha512-nYoHwFyXcQ2lkQejKReoINknkgFjeIZhyJNMBwHng5UHO/ewHKs1dV2XVaLrKkHTZ1gCZ+dKkjEp26wwHyQeGg==
+
 "@grammyjs/types@3.22.1":
   version "3.22.1"
   resolved "https://registry.yarnpkg.com/@grammyjs/types/-/types-3.22.1.tgz#7c6f2b541f10af06a19cea6d35d0bbf18ea44d20"

@@ -1,32 +1,29 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { Bot } from "grammy";
+import { Bot, GrammyError, type Context } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
 import crypto from "crypto";
+import {
+  type Conversation,
+  type ConversationFlavor,
+  conversations,
+  createConversation,
+} from "@grammyjs/conversations";
 
 // Bot setup
-if(!process.env.BOT_API_KEY) {
-  console.error("Error: BOT_API_KEY is undefined or not provided!");
-  process.exit(1);
-}
-
-const bot = new Bot(process.env.BOT_API_KEY);
-
-if(!process.env.GOOGLE_GEMINI_API_KEY) {
-  console.error("Error: GOOGLE_GEMINI_API_KEY is undefined or not provided!");
-  process.exit(1);
-}
+const bot = new Bot<ConversationFlavor<Context>>(process.env.BOT_API_KEY!);
+bot.use(conversations());
 
 const genAi = new GoogleGenAI({
   vertexai: false,
-  apiKey: process.env.GOOGLE_GEMINI_API_KEY,
+  apiKey: process.env.GOOGLE_GEMINI_API_KEY!,
 });
 
 const chats = genAi.chats.create({
   model: "gemini-2.5-flash-lite",
   config: {
-    systemInstruction: "You are Alex, a Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
+    systemInstruction: "You are Alex, a FEMALE Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short, unless asked otherwise. You have the ability to respond to audios and images as well."
   },
 });
 
@@ -48,28 +45,64 @@ bot.command('start', async (ctx) => {
   return ctx.reply(response.text, { parse_mode: 'Markdown' });
 });
 
-bot.command('generate', async (ctx) => {
-  const chats = genAi.chats.create({
-    model: "gemini-2.5-flash-lite",
-    config: {
-      systemInstruction: "You are Alex, a Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short unless told otherwise. You have the ability to respond to audios, images."
-    },
+bot.command('help', async (ctx) => {
+  const message = `🤖 AI Helper Bot - Commands
+
+  /start - Start a session and ask me general queries.
+  (Note: I can't answer real-time stuff like date, time, weather etc.)
+
+  /generate - Turn your text prompt into an image.
+  (You'll choose a style after giving a prompt.)
+
+  Type /help anytime to see this menu again. 🚀`;
+
+  await ctx.reply(message);
+});
+
+// defining the conversation
+async function imaGen(conversation: Conversation, ctx: Context) {
+  await ctx.reply("Please describe your image.");
+  const promptCtx: Context = await conversation.waitFor("message:text");
+  const prompt: string | undefined = promptCtx.message?.text;
+  let style: string = ""; 
+
+  const styleMenu = conversation.menu()
+    .text("anime", async (ctx) => {
+      style = "anime";
+      await ctx.reply("Selected anime!");
+      ctx.menu.close();
+    })
+    .text("flux-dev", async (ctx) => {
+      style = "flux-dev";
+      await ctx.reply("Selected flux-dev!");
+      ctx.menu.close();
+    })
+    .row()
+    .text("flux-schnell", async (ctx) => {
+      style = "flux-schnell";
+      await ctx.reply("Selected flux-schnell!");
+      ctx.menu.close();
+    })
+    .text("flux-dev-fast", async (ctx) => {
+      style = "flux-dev-fast";
+      await ctx.reply("Selected flux-dev-fast!");
+      ctx.menu.close();
+    })
+    .row()
+    .text("realistic", async (ctx) => {
+      style = "realistic";
+      await ctx.reply("Selected realistic!");
+      ctx.menu.close();
+    });
+
+  await ctx.reply("Please select a style for your image: ", {
+    reply_markup: styleMenu,
   });
-  
-  const message = ctx.message?.text?.split(" ").slice(1).join(" ");
-  if(!message) {
-    return ctx.reply("Command Usage: /generate <prompt>, <style>");
-  }
 
-  const [prompt, style] = message.split(",").map((s) => s.trim());
-  if(!prompt || !style) {
-    return ctx.reply("For generating image please write the command in the following format. Example:\n/generate A cat wearing glasses, cartoon");
-  }
-
-  await ctx.reply("⚡ Generating your image... please wait!");
-
+  await conversation.wait();
   try {
     const payload = JSON.stringify({ prompt, style });
+    console.log(payload);
     const timestamp = Date.now().toString();
     const signature = signPayload(payload, process.env.SIGNATURE_VERIFICATION_SECRET_KEY!, timestamp);
     const response = await fetch(`${process.env.IMAGEN_WEBHOOK_URL}`, {
@@ -81,21 +114,27 @@ bot.command('generate', async (ctx) => {
       },
       body: payload
     })
-
-    const contentType = response.headers.get("content-type") || "";
-    
-    // if (contentType.startsWith("image/")) {
-    //   const buffer = Buffer.from(await response.arrayBuffer());
-    //   return ctx.replyWithPhoto(new InputFile(buffer));
-    // }
-
-    // const errorText = await response.text();
-    // return ctx.reply(`❌ Request Failed: ${errorText}`);
     const data = await response.json();
-    return ctx.reply(data.message);
-  } catch (error) {
+    await ctx.reply(data.message);
+    await conversation.halt();
+  } catch(error) {
     console.error("Webhook error:", error);
     return ctx.reply("⚠️ Something went wrong while contacting the image API.");
+  }
+}
+
+// Registering the conversation
+bot.use(createConversation(imaGen));
+
+bot.command('generate', async (ctx) => {
+  try {
+    // initializing conversation
+    await ctx.conversation.enter("imaGen");
+  } catch (error) {
+    if(error instanceof GrammyError) {
+      console.log("Error: ", error.message);
+      return;
+    }
   }
 })
 
