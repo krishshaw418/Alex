@@ -27,6 +27,7 @@ const chats = genAi.chats.create({
   },
 });
 
+//Signature generating func for authorized communication
 function signPayload(payload: string, secret: string, timestamp: string) {
   return crypto.createHmac("sha256", secret).update(`${timestamp}.${payload}`).digest("hex");
 }
@@ -34,8 +35,8 @@ function signPayload(payload: string, secret: string, timestamp: string) {
 // Handlers
 bot.command('start', async (ctx) => {
   const user: User | undefined = ctx.from;
-  const fullName: string = `${user?.username}`;
-  const prompt: string = `Greet the user with the fullname ${fullName} in one sentence.`;
+  const name: string = `${user?.first_name}`;
+  const prompt: string = `Greet the user with their name ${name} in one simple cheerful sentence.`;
   const response = await chats.sendMessage({
     message: prompt
   })
@@ -46,7 +47,7 @@ bot.command('start', async (ctx) => {
 });
 
 bot.command('help', async (ctx) => {
-  const message = `🤖 AI Helper Bot - Commands
+  const message = `🤖 Alex Bot - Commands
 
   /start - Start a session and ask me general queries.
   (Note: I can't answer real-time stuff like date, time, weather etc.)
@@ -56,7 +57,7 @@ bot.command('help', async (ctx) => {
 
   Type /help anytime to see this menu again. 🚀`;
 
-  await ctx.reply(message);
+  await ctx.reply(message, { parse_mode: "HTML" });
 });
 
 // defining the conversation
@@ -66,6 +67,7 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   const prompt: string | undefined = promptCtx.message?.text;
   let style: string = ""; 
 
+  // Menu for style selection
   const styleMenu = conversation.menu()
     .text("anime", async (ctx) => {
       style = "anime";
@@ -100,6 +102,8 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   });
 
   await conversation.wait();
+
+  //Posting request with the payload to the microservice for image generation
   try {
     const payload = JSON.stringify({ prompt, style });
     console.log(payload);
