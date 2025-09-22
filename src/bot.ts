@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { Bot, GrammyError, type Context } from "grammy";
+import express from "express";
+import { Bot, webhookCallback, GrammyError, HttpError, type Context } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
 import crypto from "crypto";
@@ -31,6 +32,13 @@ const chats = genAi.chats.create({
 function signPayload(payload: string, secret: string, timestamp: string) {
   return crypto.createHmac("sha256", secret).update(`${timestamp}.${payload}`).digest("hex");
 }
+
+// Express setup
+const app = express();
+app.use(express.json());
+
+// Attach bot webhook handler to Express
+app.use("/webhook", webhookCallback(bot, "express"));
 
 // Handlers
 bot.command('start', async (ctx) => {
@@ -249,10 +257,28 @@ bot.on('message:video', async (ctx) => {
   return ctx.reply(result.text, { parse_mode: 'Markdown' });
 })
 
-bot.catch((error) => {
-  const ctx = error.ctx;
-  console.log(error);
-  return ctx.reply('Something went wrong. Try again!');
-});
+//  For dev-mode
+// bot.catch((err) => {
+//   const ctx = err.ctx;
+//   console.error(`Error while handling update ${ctx.update.update_id}:`);
+//   const e = err.error;
 
-bot.start();
+//   if (e instanceof GrammyError) {
+//     console.error("Error in request:", e.description);
+//   } else if (e instanceof HttpError) {
+//     console.error("Could not contact Telegram:", e);
+//   } else {
+//     console.error("Unknown error:", e);
+//   }
+// });
+
+// bot.start();
+
+// For production-mode
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, async () => {
+  const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/webhook`;
+  await bot.api.setWebhook(webhookUrl);
+  console.log(`Webhook set to ${webhookUrl}`);
+})
