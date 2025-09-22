@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-import { Bot, webhookCallback, GrammyError, type Context } from "grammy";
+import { Bot, webhookCallback, GrammyError, HttpError, type Context } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
+import crypto from "crypto";
 import {
   type Conversation,
   type ConversationFlavor,
@@ -25,8 +26,12 @@ const chats = genAi.chats.create({
   config: {
     systemInstruction: "You are Alex, a FEMALE Telegram Chatbot built for assisting with queries. You are built by Krish, a chill Dev. Maintain a friendly tone. Keep responses one paragraph short, unless asked otherwise. You have the ability to respond to audios and images as well."
   },
-})
+});
 
+//Signature generating func for authorized communication
+function signPayload(payload: string, secret: string, timestamp: string) {
+  return crypto.createHmac("sha256", secret).update(`${timestamp}.${payload}`).digest("hex");
+}
 
 // Express setup
 const app = express();
@@ -38,8 +43,8 @@ app.use("/webhook", webhookCallback(bot, "express"));
 // Handlers
 bot.command('start', async (ctx) => {
   const user: User | undefined = ctx.from;
-  const fullName: string = `${user?.username}`;
-  const prompt: string = `Greet the user with the fullname ${fullName} in one sentence.`;
+  const name: string = `${user?.first_name}`;
+  const prompt: string = `Greet the user with their name ${name} in one simple cheerful sentence.`;
   const response = await chats.sendMessage({
     message: prompt
   })
@@ -50,7 +55,7 @@ bot.command('start', async (ctx) => {
 });
 
 bot.command('help', async (ctx) => {
-  const message = `🤖 AI Helper Bot - Commands
+  const message = `🤖 Alex Bot - Commands
 
   /start - Start a session and ask me general queries.
   (Note: I can't answer real-time stuff like date, time, weather etc.)
@@ -60,16 +65,17 @@ bot.command('help', async (ctx) => {
 
   Type /help anytime to see this menu again. 🚀`;
 
-  await ctx.reply(message);
-})
+  await ctx.reply(message, { parse_mode: "HTML" });
+});
 
 // defining the conversation
 async function imaGen(conversation: Conversation, ctx: Context) {
   await ctx.reply("Please describe your image.");
   const promptCtx: Context = await conversation.waitFor("message:text");
-  const prompt = promptCtx.message?.text;
+  const prompt: string | undefined = promptCtx.message?.text;
   let style: string = ""; 
 
+  // Menu for style selection
   const styleMenu = conversation.menu()
     .text("anime", async (ctx) => {
       style = "anime";
@@ -104,11 +110,29 @@ async function imaGen(conversation: Conversation, ctx: Context) {
   });
 
   await conversation.wait();
-  const payload = { prompt, style };
-  console.log(payload);
 
-  await ctx.reply("Processing your request. Hold tight!");
-  await conversation.halt();
+  //Posting request with the payload to the microservice for image generation
+  try {
+    const payload = JSON.stringify({ prompt, style });
+    console.log(payload);
+    const timestamp = Date.now().toString();
+    const signature = signPayload(payload, process.env.SIGNATURE_VERIFICATION_SECRET_KEY!, timestamp);
+    const response = await fetch(`${process.env.IMAGEN_WEBHOOK_URL}`, {
+      method: "POST",
+      headers: {
+        "x-signature": signature,
+        "x-timestamp": timestamp,
+        "Content-Type" : "application/json",
+      },
+      body: payload
+    })
+    const data = await response.json();
+    await ctx.reply(data.message);
+    await conversation.halt();
+  } catch(error) {
+    console.error("Webhook error:", error);
+    return ctx.reply("⚠️ Something went wrong while contacting the image API.");
+  }
 }
 
 // Registering the conversation
@@ -134,14 +158,7 @@ bot.on('message:text', async (ctx) => {
   if(!response.text) {
     return ctx.reply("Server busy. Please try again after sometime.");
   }
-  try {
-    ctx.reply(response.text, {parse_mode: "Markdown"});
-  } catch (error) {
-    if(error instanceof GrammyError) {
-      console.log("Error from text handler: ", error.message);
-      return;
-    }
-  }
+  return ctx.reply(response.text, {parse_mode: "Markdown"});
 })
 
 bot.on('message:voice', async (ctx) => {
@@ -171,14 +188,7 @@ bot.on('message:voice', async (ctx) => {
   if(!result.text) {
     return ctx.reply("Server busy. Please try again after sometime.");
   }
-  try {
-    ctx.reply(result.text, { parse_mode: 'Markdown' });
-  } catch (error) {
-    if(error instanceof GrammyError) {
-      console.log("Error from audio handler", error.message);
-      return;
-    }
-  }
+  return ctx.reply(result.text, { parse_mode: 'Markdown' });
 })
 
 type MINE = 'image/jpeg' | 'image/png' | 'video/mp4' | 'video/webm';
@@ -199,9 +209,6 @@ bot.on('message:photo', async (ctx) => {
 
   const photoURL: string = `${process.env.BOT_API_SERVER}/file/bot${process.env.BOT_API_KEY}/${photoFilePath}`;
   const fetchedResponse = await fetch(photoURL);
-  if(!fetchedResponse.ok){
-    return;
-  }
 
   const data: ArrayBuffer = await fetchedResponse.arrayBuffer();
   const base64Photo: string = Buffer.from(data).toString('base64');
@@ -219,14 +226,7 @@ bot.on('message:photo', async (ctx) => {
   if(!result.text){
     return ctx.reply("Server busy. Please try again after sometime.");
   }
-  try {
-    ctx.reply(result.text, { parse_mode: 'Markdown' });
-  } catch (error) {
-    if(error instanceof GrammyError) {
-      console.log("Error from image handler: ", error.message);
-      return;
-    }
-  }
+  return ctx.reply(result.text, { parse_mode: 'Markdown' });
 });
 
 bot.on('message:video', async (ctx) => {
@@ -257,6 +257,24 @@ bot.on('message:video', async (ctx) => {
   return ctx.reply(result.text, { parse_mode: 'Markdown' });
 })
 
+//  For dev-mode
+// bot.catch((err) => {
+//   const ctx = err.ctx;
+//   console.error(`Error while handling update ${ctx.update.update_id}:`);
+//   const e = err.error;
+
+//   if (e instanceof GrammyError) {
+//     console.error("Error in request:", e.description);
+//   } else if (e instanceof HttpError) {
+//     console.error("Could not contact Telegram:", e);
+//   } else {
+//     console.error("Unknown error:", e);
+//   }
+// });
+
+// bot.start();
+
+// For production-mode
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, async () => {
