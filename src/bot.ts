@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
-import express from "express";
-import { Bot, webhookCallback, GrammyError, HttpError, type Context } from "grammy";
+import express, { type Request, type Response } from "express";
+import { Bot, webhookCallback, GrammyError, type Context } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
 import crypto from "crypto";
@@ -276,6 +276,12 @@ bot.on('message:video', async (ctx) => {
 
 // For production-mode
 const PORT = process.env.PORT || 3000;
+
+app.post(`/get-result`, async (req: Request, res: Response) => {
+  const { imgUrl, validity } = req.body;
+  console.log("Url: ", imgUrl);
+  res.status(200).json({success: true, message: "Result received successfully!"});
+})
 
 app.listen(PORT, async () => {
   const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/webhook`;
