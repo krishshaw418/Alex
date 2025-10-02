@@ -286,7 +286,7 @@ bot.on('message:video', async (ctx) => {
 const PORT = process.env.PORT || 3000;
 
 app.post(`/get-result`, async (req: Request, res: Response) => {
-  const { imgUrl, chatId } = req.body;
+  const { imgUrl, validity, chatId } = req.body;
   console.log("Url: ", imgUrl);
   try {
     await bot.api.sendMessage(chatId, imgUrl);
