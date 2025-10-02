@@ -70,6 +70,8 @@ bot.command('help', async (ctx) => {
 
 // defining the conversation
 async function imaGen(conversation: Conversation, ctx: Context) {
+  const chatId = ctx.chatId;
+  console.log("chatId: ",chatId);
   await ctx.reply("Please describe your image.");
   const promptCtx: Context = await conversation.waitFor("message:text");
   const prompt: string | undefined = promptCtx.message?.text;
@@ -103,7 +105,13 @@ async function imaGen(conversation: Conversation, ctx: Context) {
       style = "realistic";
       await ctx.reply("Selected realistic!");
       ctx.menu.close();
-    });
+    })
+    .row()
+    .text("cancel", async (ctx) => {
+      await ctx.reply("Image generation cancelled!");
+      ctx.menu.close();
+      await conversation.halt();
+    })
 
   await ctx.reply("Please select a style for your image: ", {
     reply_markup: styleMenu,
@@ -113,7 +121,7 @@ async function imaGen(conversation: Conversation, ctx: Context) {
 
   //Posting request with the payload to the microservice for image generation
   try {
-    const payload = JSON.stringify({ prompt, style });
+    const payload = JSON.stringify({ prompt, style, chatId });
     console.log(payload);
     const timestamp = Date.now().toString();
     const signature = signPayload(payload, process.env.SIGNATURE_VERIFICATION_SECRET_KEY!, timestamp);
@@ -278,9 +286,14 @@ bot.on('message:video', async (ctx) => {
 const PORT = process.env.PORT || 3000;
 
 app.post(`/get-result`, async (req: Request, res: Response) => {
-  const { imgUrl, validity } = req.body;
+  const { imgUrl, chatId } = req.body;
   console.log("Url: ", imgUrl);
-  res.status(200).json({success: true, message: "Result received successfully!"});
+  try {
+    await bot.api.sendMessage(chatId, imgUrl);
+  } catch (error) {
+    console.log("Error: ", error);
+  }
+  return res.status(200).json({success: true, message: "Result received successfully!"});
 })
 
 app.listen(PORT, async () => {
