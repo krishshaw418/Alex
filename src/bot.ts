@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-// import express from "express";
+import express, { type Request, type Response } from "express";
 import { Bot, webhookCallback, GrammyError, HttpError, type Context } from "grammy";
 import { GoogleGenAI, type Part } from '@google/genai';
 import type { User, File } from 'grammy/types';
@@ -34,8 +34,8 @@ function signPayload(payload: string, secret: string, timestamp: string) {
 }
 
 // Express setup
-// const app = express();
-// app.use(express.json());
+const app = express();
+app.use(express.json());
 
 // Attach bot webhook handler to Express
 // app.use("/webhook", webhookCallback(bot, "express"));
@@ -283,10 +283,22 @@ bot.catch((err) => {
 bot.start();
 
 // For production-mode
-// const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// app.listen(PORT, async () => {
-//   const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/webhook`;
-//   await bot.api.setWebhook(webhookUrl);
-//   console.log(`Webhook set to ${webhookUrl}`);
-// })
+app.post(`/get-result`, async (req: Request, res: Response) => {
+  const { imgUrl, validity, chatId } = req.body;
+  console.log("Url: ", imgUrl);
+  try {
+    await bot.api.sendMessage(chatId, imgUrl);
+  } catch (error) {
+    console.log("Error: ", error);
+  }
+  return res.status(200).json({success: true, message: "Result received successfully!"});
+})
+
+app.listen(PORT, async () => {
+  // const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/webhook`;
+  // await bot.api.setWebhook(webhookUrl);
+  // console.log(`Webhook set to ${webhookUrl}`);
+  console.log(`Listening on port: ${PORT}...`);
+})
